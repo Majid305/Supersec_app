@@ -1,8 +1,6 @@
-
 import React, { useState } from 'react';
 import { Database, Download, UploadCloud, Loader2, Moon, Sun, Bell } from 'lucide-react';
-import { getAllDocuments, restoreBackup } from '../services/db';
-import { DocumentData } from '../types';
+import { getAllData, restoreBackup } from '../services/db';
 
 interface SettingsProps {
     enableReminders: boolean;
@@ -16,24 +14,24 @@ export const Settings: React.FC<SettingsProps> = ({ enableReminders, setEnableRe
 
     const handleBackup = async () => {
         try {
-            const docs = await getAllDocuments();
-            if (docs.length === 0) {
+            const data = await getAllData();
+            if (data.documents.length === 0 && data.checks.length === 0) {
                 alert("Aucune donnée à sauvegarder.");
                 return;
             }
-            const json = JSON.stringify(docs, null, 2);
+            const json = JSON.stringify(data, null, 2);
             const blob = new Blob([json], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `supersec_backup_${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `supersec_full_backup_${new Date().toISOString().split('T')[0]}.json`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         } catch (e) {
             console.error(e);
-            alert("Erreur lors de la création de la sauvegarde.");
+            alert("Erreur lors de la création de la sauvegarde intégrale.");
         }
     };
 
@@ -41,7 +39,7 @@ export const Settings: React.FC<SettingsProps> = ({ enableReminders, setEnableRe
         const file = e.target.files?.[0];
         if (!file) return;
 
-        if (!window.confirm(`Restaurer "${file.name}" ?`)) {
+        if (!window.confirm(`Restaurer l'intégralité de "${file.name}" ?\nCela mettra à jour vos Courriers et vos Chèques.`)) {
             e.target.value = "";
             return;
         }
@@ -51,11 +49,11 @@ export const Settings: React.FC<SettingsProps> = ({ enableReminders, setEnableRe
         reader.onload = async (event) => {
             try {
                 const data = JSON.parse(event.target?.result as string);
-                const count = await restoreBackup(data as DocumentData[]);
-                alert(`${count} documents restaurés.`);
+                const count = await restoreBackup(data);
+                alert(`${count} éléments (Courriers/Chèques) restaurés avec succès.`);
                 window.location.reload();
             } catch (err: any) {
-                alert("Erreur: " + err.message);
+                alert("Erreur lors de la lecture du fichier de sauvegarde: " + err.message);
             } finally {
                 setIsRestoring(false);
             }
@@ -70,7 +68,7 @@ export const Settings: React.FC<SettingsProps> = ({ enableReminders, setEnableRe
             {isRestoring && (
                 <div className="fixed inset-0 bg-black/60 z-[100] flex flex-col items-center justify-center text-white backdrop-blur-sm">
                     <Loader2 size={48} className="animate-spin mb-4 text-[#0ABAB5]" />
-                    <p className="font-bold text-xl uppercase tracking-widest">Restauration...</p>
+                    <p className="font-bold text-xl uppercase tracking-widest">Restauration intégrale...</p>
                 </div>
             )}
 
@@ -108,7 +106,7 @@ export const Settings: React.FC<SettingsProps> = ({ enableReminders, setEnableRe
                 <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-transparent dark:border-slate-800 p-6 space-y-6 transition-colors duration-300">
                     <div className="flex items-center space-x-2 text-gray-700 dark:text-gray-300">
                         <Database size={24} />
-                        <h3 className="font-bold text-lg uppercase tracking-tight">Archives</h3>
+                        <h3 className="font-bold text-lg uppercase tracking-tight">Gestion des Données</h3>
                     </div>
                     
                     <div className="grid grid-cols-1 gap-4">
@@ -117,20 +115,21 @@ export const Settings: React.FC<SettingsProps> = ({ enableReminders, setEnableRe
                             className="w-full bg-slate-800 text-white font-black py-4 rounded-2xl shadow-md active:scale-95 transition-transform flex justify-center items-center space-x-2"
                         >
                             <Download size={18} />
-                            <span className="uppercase tracking-tight">Exporter Base Locale</span>
+                            <span className="uppercase tracking-tight">Sauvegarde Totale (JSON)</span>
                         </button>
 
                         <label className="w-full bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 font-black py-4 rounded-2xl hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-transform flex justify-center items-center space-x-2 cursor-pointer">
                             <UploadCloud size={18} />
-                            <span className="uppercase tracking-tight">Restaurer Base Locale</span>
+                            <span className="uppercase tracking-tight">Importer une Sauvegarde</span>
                             <input type="file" accept=".json" className="hidden" onChange={handleRestore} disabled={isRestoring} />
                         </label>
                     </div>
+                    <p className="text-[9px] text-gray-400 text-center uppercase tracking-widest">Note: L'importation fusionne les fichiers avec votre base locale existante.</p>
                 </div>
             </div>
 
             <div className="mt-8 text-center pb-6">
-                <p className="text-[10px] text-gray-400 dark:text-gray-600 font-mono uppercase tracking-widest font-black">Sécapp AI v1.4.0</p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-600 font-mono uppercase tracking-widest font-black">Sécapp AI v1.5.0 • Expert Data Management</p>
             </div>
         </div>
     );
