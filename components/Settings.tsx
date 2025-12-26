@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Save, Lock, Bell, Database, Download, UploadCloud, Loader2, Moon, Sun, ExternalLink, ShieldCheck } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Save, Lock, Bell, Database, Download, UploadCloud, Loader2, Moon, Sun, ExternalLink, ShieldCheck, Lightbulb } from 'lucide-react';
 import { getAllDocuments, restoreBackup } from '../services/db';
 import { DocumentData } from '../types';
 
@@ -12,6 +12,27 @@ interface SettingsProps {
 
 export const Settings: React.FC<SettingsProps> = ({ enableReminders, setEnableReminders, theme, setTheme }) => {
     const [isRestoring, setIsRestoring] = useState(false);
+    const [hasKey, setHasKey] = useState(false);
+
+    useEffect(() => {
+        checkApiKey();
+    }, []);
+
+    const checkApiKey = async () => {
+        if (window.aistudio && typeof window.aistudio.hasSelectedApiKey === 'function') {
+            const selected = await window.aistudio.hasSelectedApiKey();
+            setHasKey(selected);
+        }
+    };
+
+    const handleSelectKey = async () => {
+        if (window.aistudio && typeof window.aistudio.openSelectKey === 'function') {
+            await window.aistudio.openSelectKey();
+            setHasKey(true);
+        } else {
+            alert("Le sélecteur de clé n'est pas disponible dans cet environnement.");
+        }
+    };
 
     const handleBackup = async () => {
         try {
@@ -71,77 +92,147 @@ export const Settings: React.FC<SettingsProps> = ({ enableReminders, setEnableRe
 
     return (
         <div className="h-full bg-gray-50 dark:bg-slate-950 p-6 overflow-y-auto transition-colors duration-300">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-8">Paramètres</h2>
+            <h2 className="text-3xl font-black text-gray-800 dark:text-white mb-8 tracking-tighter">Paramètres</h2>
             
             {isRestoring && (
                 <div className="fixed inset-0 bg-black/60 z-[100] flex flex-col items-center justify-center text-white backdrop-blur-sm">
-                    <Loader2 size={48} className="animate-spin mb-4 text-[#0ABAB5]" />
+                    <Loader2 size={48} className="animate-spin mb-4 text-citron" />
                     <p className="font-bold text-xl">Restauration en cours...</p>
                 </div>
             )}
 
-            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-transparent dark:border-slate-800 p-6 space-y-6 mb-6 transition-colors duration-300">
-                <div className="flex items-center space-x-2 text-[#FF6600]">
-                    <Bell size={24} />
-                    <h3 className="font-bold text-lg">Préférences</h3>
-                </div>
-
-                <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-800 pb-4">
-                    <span className="text-gray-700 dark:text-gray-200 text-sm font-medium">Rappels visuels</span>
-                    <div 
-                        onClick={() => setEnableReminders(!enableReminders)}
-                        className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors ${enableReminders ? 'bg-[#0ABAB5]' : 'bg-gray-300 dark:bg-gray-600'}`}
-                    >
-                        <div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform ${enableReminders ? 'translate-x-6' : ''}`}></div>
+            {/* AI Environment Section (As per user request image) */}
+            <div className="bg-[#0b0f19] rounded-[2.5rem] border border-slate-800 p-8 mb-8 shadow-2xl">
+                <div className="flex justify-between items-start mb-8">
+                    <div className="flex items-center space-x-4">
+                        <div className="p-3 bg-slate-800/50 rounded-2xl border border-slate-700">
+                            <Lock size={24} className="text-teal-400" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-bold text-teal-400">Intelligence</h3>
+                            <h3 className="text-xl font-bold text-teal-400">Artificielle</h3>
+                        </div>
+                    </div>
+                    <div className="flex items-center space-x-2 bg-emerald-950/30 border border-emerald-500/30 px-4 py-2 rounded-full">
+                        <ShieldCheck size={14} className="text-emerald-500" />
+                        <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Optimisé Gratuit</span>
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                        {theme === 'dark' ? <Moon size={18} className="text-purple-400"/> : <Sun size={18} className="text-orange-400"/>}
-                        <span className="text-gray-700 dark:text-gray-200 text-sm font-medium">Mode Sombre</span>
+                <div className="bg-[#070b14] rounded-3xl p-6 mb-8 border border-slate-800/50">
+                    <div className="flex items-start space-x-4">
+                        <div className="mt-1 shrink-0">
+                            <Lightbulb size={20} className="text-yellow-400" />
+                        </div>
+                        <div className="space-y-4">
+                            <p className="text-sm text-slate-400 leading-relaxed">
+                                Pour utiliser Sécapp AI gratuitement, créez une clé API gratuite sur <span className="text-slate-200 font-bold">Google AI Studio</span>. Aucun frais n'est appliqué pour une utilisation standard.
+                            </p>
+                            <a 
+                                href="https://aistudio.google.com/app/apikey" 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="inline-flex items-center space-x-2 text-teal-400 font-bold text-sm hover:underline"
+                            >
+                                <span>Obtenir ma clé gratuite</span>
+                                <ExternalLink size={14} />
+                            </a>
+                        </div>
                     </div>
-                    <div 
-                        onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-                        className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors ${theme === 'dark' ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'}`}
+                </div>
+
+                <div className="space-y-6">
+                    <div>
+                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-3 tracking-widest">Votre Clé API Gemini</label>
+                        <div className="relative">
+                            <input 
+                                type="password" 
+                                readOnly
+                                value={hasKey ? "••••••••••••••••••••••••••••••••" : ""}
+                                className="w-full bg-[#070b14] border-2 border-slate-800 rounded-2xl px-6 py-4 text-white font-mono focus:border-teal-500/50 outline-none transition-all placeholder-slate-700"
+                                placeholder="Configurez votre clé..."
+                            />
+                            {hasKey && (
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 w-3 h-3 bg-teal-500 rounded-full shadow-[0_0_10px_rgba(20,184,166,0.5)]"></div>
+                            )}
+                        </div>
+                    </div>
+
+                    <button 
+                        onClick={handleSelectKey}
+                        className="w-full bg-teal-600 hover:bg-teal-500 text-white font-black py-5 rounded-2xl shadow-xl flex items-center justify-center space-x-3 transition-all active:scale-[0.98]"
                     >
-                        <div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform ${theme === 'dark' ? 'translate-x-6' : ''}`}></div>
-                    </div>
+                        <Save size={20} />
+                        <span className="text-lg">Activer ma clé gratuite</span>
+                    </button>
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-transparent dark:border-slate-800 p-6 space-y-6 transition-colors duration-300">
-                <div className="flex items-center space-x-2 text-gray-700 dark:text-gray-300">
-                    <Database size={24} />
-                    <h3 className="font-bold text-lg">Données Locales</h3>
-                </div>
-                
-                <div className="grid grid-cols-1 gap-4">
-                    <button 
-                        onClick={handleBackup}
-                        disabled={isRestoring}
-                        className="w-full bg-gray-800 dark:bg-slate-700 text-white font-bold py-4 rounded-2xl shadow-md active:scale-95 transition-transform flex justify-center items-center space-x-2"
-                    >
-                        <Download size={18} />
-                        <span>Exporter la Base</span>
-                    </button>
+            {/* Other Settings */}
+            <div className="space-y-6">
+                <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-transparent dark:border-slate-800 p-6 space-y-6 transition-colors duration-300">
+                    <div className="flex items-center space-x-2 text-citron">
+                        <Bell size={24} />
+                        <h3 className="font-bold text-lg">Préférences</h3>
+                    </div>
 
-                    <label className={`w-full bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 font-bold py-4 rounded-2xl hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-transform flex justify-center items-center space-x-2 cursor-pointer ${isRestoring ? 'opacity-50' : ''}`}>
-                        <UploadCloud size={18} />
-                        <span>Restaurer une Base</span>
-                        <input 
-                            type="file" 
-                            accept=".json"
-                            className="hidden"
-                            onChange={handleRestore}
+                    <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-800 pb-4">
+                        <span className="text-gray-700 dark:text-gray-200 text-sm font-medium">Rappels visuels</span>
+                        <div 
+                            onClick={() => setEnableReminders(!enableReminders)}
+                            className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors ${enableReminders ? 'bg-citron' : 'bg-gray-300 dark:bg-gray-600'}`}
+                        >
+                            <div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform ${enableReminders ? 'translate-x-6' : ''}`}></div>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                            {theme === 'dark' ? <Moon size={18} className="text-purple-400"/> : <Sun size={18} className="text-orange-400"/>}
+                            <span className="text-gray-700 dark:text-gray-200 text-sm font-medium">Mode Sombre</span>
+                        </div>
+                        <div 
+                            onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                            className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors ${theme === 'dark' ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'}`}
+                        >
+                            <div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform ${theme === 'dark' ? 'translate-x-6' : ''}`}></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-transparent dark:border-slate-800 p-6 space-y-6 transition-colors duration-300">
+                    <div className="flex items-center space-x-2 text-gray-700 dark:text-gray-300">
+                        <Database size={24} />
+                        <h3 className="font-bold text-lg">Données Locales</h3>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 gap-4">
+                        <button 
+                            onClick={handleBackup}
                             disabled={isRestoring}
-                        />
-                    </label>
+                            className="w-full bg-gray-800 dark:bg-slate-700 text-white font-bold py-4 rounded-2xl shadow-md active:scale-95 transition-transform flex justify-center items-center space-x-2"
+                        >
+                            <Download size={18} />
+                            <span>Exporter la Base</span>
+                        </button>
+
+                        <label className={`w-full bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 font-bold py-4 rounded-2xl hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-transform flex justify-center items-center space-x-2 cursor-pointer ${isRestoring ? 'opacity-50' : ''}`}>
+                            <UploadCloud size={18} />
+                            <span>Restaurer une Base</span>
+                            <input 
+                                type="file" 
+                                accept=".json"
+                                className="hidden"
+                                onChange={handleRestore}
+                                disabled={isRestoring}
+                            />
+                        </label>
+                    </div>
                 </div>
             </div>
 
             <div className="mt-8 text-center pb-6">
-                <p className="text-[10px] text-gray-400 dark:text-gray-600 font-mono uppercase tracking-widest">Supersec_app v1.2.5 • Enterprise Secure</p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-600 font-mono uppercase tracking-widest">Sécapp AI v1.3.0 • Enterprise Secure</p>
             </div>
         </div>
     );
