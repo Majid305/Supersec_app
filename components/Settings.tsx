@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Lock, Bell, Database, Download, UploadCloud, Loader2, Moon, Sun, ExternalLink, ShieldCheck, Lightbulb } from 'lucide-react';
+import { Save, Lock, Bell, Database, Download, UploadCloud, Loader2, Moon, Sun, ExternalLink, ShieldCheck, Lightbulb, Key } from 'lucide-react';
 import { getAllDocuments, restoreBackup } from '../services/db';
 import { DocumentData } from '../types';
 
@@ -35,12 +35,13 @@ export const Settings: React.FC<SettingsProps> = ({ enableReminders, setEnableRe
         if (win.aistudio && typeof win.aistudio.openSelectKey === 'function') {
             try {
                 await win.aistudio.openSelectKey();
+                // On assume le succès car le statut peut mettre du temps à se mettre à jour
                 setHasKey(true);
             } catch (e) {
                 console.error("Erreur lors de l'ouverture du sélecteur:", e);
             }
         } else {
-            alert("Le sélecteur de clé n'est pas disponible dans cet environnement.");
+            alert("Le sélecteur de clé est disponible uniquement dans l'environnement AI Studio.");
         }
     };
 
@@ -112,8 +113,8 @@ export const Settings: React.FC<SettingsProps> = ({ enableReminders, setEnableRe
             )}
 
             {/* AI Environment Section (As per user request image) */}
-            <div className="bg-[#0b0f19] rounded-[2.5rem] border border-slate-800 p-8 mb-8 shadow-2xl">
-                <div className="flex justify-between items-start mb-8">
+            <div className="bg-[#0b0f19] rounded-[2.5rem] border border-slate-800 p-8 mb-8 shadow-2xl overflow-hidden relative">
+                <div className="flex justify-between items-start mb-8 relative z-10">
                     <div className="flex items-center space-x-4">
                         <div className="p-3 bg-slate-800/50 rounded-2xl border border-slate-700">
                             <Lock size={24} className="text-teal-400" />
@@ -129,7 +130,7 @@ export const Settings: React.FC<SettingsProps> = ({ enableReminders, setEnableRe
                     </div>
                 </div>
 
-                <div className="bg-[#070b14] rounded-3xl p-6 mb-8 border border-slate-800/50">
+                <div className="bg-[#070b14] rounded-3xl p-6 mb-8 border border-slate-800/50 relative z-10">
                     <div className="flex items-start space-x-4">
                         <div className="mt-1 shrink-0">
                             <Lightbulb size={20} className="text-yellow-400" />
@@ -151,31 +152,41 @@ export const Settings: React.FC<SettingsProps> = ({ enableReminders, setEnableRe
                     </div>
                 </div>
 
-                <div className="space-y-6">
-                    <div>
-                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-3 tracking-widest">Votre Clé API Gemini</label>
+                <div className="space-y-6 relative z-10">
+                    <div className="group cursor-pointer" onClick={handleSelectKey}>
+                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-3 tracking-widest flex items-center">
+                            Votre Clé API Gemini
+                            {!hasKey && <span className="ml-2 text-yellow-500 animate-pulse">(Action requise)</span>}
+                        </label>
                         <div className="relative">
-                            <input 
-                                type="password" 
-                                readOnly
-                                value={hasKey ? "••••••••••••••••••••••••••••••••" : ""}
-                                className="w-full bg-[#070b14] border-2 border-slate-800 rounded-2xl px-6 py-4 text-white font-mono focus:border-teal-500/50 outline-none transition-all placeholder-slate-700"
-                                placeholder="Configurez votre clé..."
-                            />
-                            {hasKey && (
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 w-3 h-3 bg-teal-500 rounded-full shadow-[0_0_10px_rgba(20,184,166,0.5)]"></div>
-                            )}
+                            <div className={`w-full bg-[#070b14] border-2 ${hasKey ? 'border-emerald-500/30' : 'border-slate-800 group-hover:border-teal-500/50'} rounded-2xl px-6 py-4 text-white font-mono flex items-center justify-between transition-all`}>
+                                <span className="opacity-50">
+                                    {hasKey ? "••••••••••••••••••••••••••••••••" : "Cliquer pour configurer..."}
+                                </span>
+                                {hasKey ? (
+                                    <div className="w-3 h-3 bg-teal-500 rounded-full shadow-[0_0_10px_rgba(20,184,166,0.5)]"></div>
+                                ) : (
+                                    <Key size={18} className="text-slate-600" />
+                                )}
+                            </div>
                         </div>
                     </div>
 
                     <button 
                         onClick={handleSelectKey}
-                        className="w-full bg-teal-600 hover:bg-teal-500 text-white font-black py-5 rounded-2xl shadow-xl flex items-center justify-center space-x-3 transition-all active:scale-[0.98]"
+                        className={`w-full ${hasKey ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-teal-600 hover:bg-teal-500'} text-white font-black py-5 rounded-2xl shadow-xl flex items-center justify-center space-x-3 transition-all active:scale-[0.98]`}
                     >
                         <Save size={20} />
-                        <span className="text-lg">Activer ma clé gratuite</span>
+                        <span className="text-lg">{hasKey ? "Modifier ma clé API" : "Activer ma clé gratuite"}</span>
                     </button>
+                    
+                    <p className="text-[10px] text-center text-slate-600 uppercase font-bold tracking-widest">
+                        Sécurisé par Google AI Studio & Sécapp Enterprise
+                    </p>
                 </div>
+                
+                {/* Background deco */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/5 rounded-full blur-[80px] -mr-32 -mt-32"></div>
             </div>
 
             {/* Other Settings */}
