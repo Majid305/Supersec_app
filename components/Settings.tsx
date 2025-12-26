@@ -19,16 +19,26 @@ export const Settings: React.FC<SettingsProps> = ({ enableReminders, setEnableRe
     }, []);
 
     const checkApiKey = async () => {
-        if (window.aistudio && typeof window.aistudio.hasSelectedApiKey === 'function') {
-            const selected = await window.aistudio.hasSelectedApiKey();
-            setHasKey(selected);
+        const win = window as any;
+        if (win.aistudio && typeof win.aistudio.hasSelectedApiKey === 'function') {
+            try {
+                const selected = await win.aistudio.hasSelectedApiKey();
+                setHasKey(selected);
+            } catch (e) {
+                console.error("Erreur lors de la vérification de la clé:", e);
+            }
         }
     };
 
     const handleSelectKey = async () => {
-        if (window.aistudio && typeof window.aistudio.openSelectKey === 'function') {
-            await window.aistudio.openSelectKey();
-            setHasKey(true);
+        const win = window as any;
+        if (win.aistudio && typeof win.aistudio.openSelectKey === 'function') {
+            try {
+                await win.aistudio.openSelectKey();
+                setHasKey(true);
+            } catch (e) {
+                console.error("Erreur lors de l'ouverture du sélecteur:", e);
+            }
         } else {
             alert("Le sélecteur de clé n'est pas disponible dans cet environnement.");
         }
@@ -129,7 +139,7 @@ export const Settings: React.FC<SettingsProps> = ({ enableReminders, setEnableRe
                                 Pour utiliser Sécapp AI gratuitement, créez une clé API gratuite sur <span className="text-slate-200 font-bold">Google AI Studio</span>. Aucun frais n'est appliqué pour une utilisation standard.
                             </p>
                             <a 
-                                href="https://aistudio.google.com/app/apikey" 
+                                href="https://aistudio.google.dev/app/apikey" 
                                 target="_blank" 
                                 rel="noopener noreferrer" 
                                 className="inline-flex items-center space-x-2 text-teal-400 font-bold text-sm hover:underline"
