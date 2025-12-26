@@ -1,6 +1,13 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { DocumentData, DocLanguage, DocStatus, RejectedCheck, CheckRejectionClass, CheckSituation } from "../types";
+
+const getAI = () => {
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error("Clé API manquante. Veuillez activer votre environnement IA dans les Paramètres.");
+  }
+  return new GoogleGenAI({ apiKey });
+};
 
 const documentSchema = {
   type: Type.OBJECT,
@@ -42,7 +49,7 @@ const checkSchema = {
 };
 
 export const analyzeDocument = async (base64Image: string, mimeType: string): Promise<Partial<DocumentData>> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = getAI();
   const model = "gemini-3-flash-preview";
 
   const prompt = "Analyse ce document administratif et extrais les informations structurées en JSON. Si le texte est en Arabe, traduis l'objet et le résumé en Français mais garde les noms propres si nécessaire.";
@@ -72,7 +79,7 @@ export const analyzeDocument = async (base64Image: string, mimeType: string): Pr
 };
 
 export const analyzeCheck = async (base64Image: string, mimeType: string): Promise<Partial<RejectedCheck>> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = getAI();
   const model = "gemini-3-flash-preview";
 
   const prompt = "Analyse ce chèque bancaire (éventuellement avec son avis de rejet). Extraits le RIB (24 chiffres), le montant, le numéro de chèque, la banque, la ville, et identifie le propriétaire (tireur) ainsi que le bénéficiaire.";
@@ -102,7 +109,7 @@ export const analyzeCheck = async (base64Image: string, mimeType: string): Promi
 };
 
 export const generateResponse = async (doc: DocumentData, instruction: string): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = getAI();
   const model = "gemini-3-flash-preview";
 
   const prompt = `En tant qu'assistant administratif, rédige une réponse ou une note suite à ce document :
@@ -122,7 +129,7 @@ export const generateResponse = async (doc: DocumentData, instruction: string): 
 };
 
 export const generateReportSynthesis = async (docs: DocumentData[], period: string, typeFilter: string): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = getAI();
   const model = "gemini-3-pro-preview";
 
   const summaryData = docs.slice(0, 15).map(d => `- Objet: ${d.objet} | Résumé: ${d.resume.substring(0, 100)}...`).join('\n');

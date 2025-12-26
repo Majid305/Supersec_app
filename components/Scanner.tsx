@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Camera, Upload, Loader2, Save, RefreshCw, Wand2, FileText, ArrowLeft, Trash2, Calendar, Clock, ChevronLeft, ChevronRight, X, Check, Edit3, Image as ImageIcon } from 'lucide-react';
 import { DocumentData, DocLanguage, DocStatus, DocType } from '../types';
@@ -17,7 +16,6 @@ export const Scanner: React.FC<ScannerProps> = ({ onSave, onCancel, initialData 
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [formData, setFormData] = useState<Partial<DocumentData> | null>(null);
-  const [aiInstruction, setAiInstruction] = useState("");
   const [isManualEntry, setIsManualEntry] = useState(false);
   
   const [pickerConfig, setPickerConfig] = useState<{field: keyof DocumentData, type: 'date' | 'datetime', label: string} | null>(null);
@@ -54,7 +52,11 @@ export const Scanner: React.FC<ScannerProps> = ({ onSave, onCancel, initialData 
       const result = await analyzeDocument(fileData, mimeType);
       setFormData(prev => ({ ...prev, ...result }));
     } catch (err: any) {
-      alert(`Erreur lors de l'analyse: ${err.message}.`);
+      if (err.message.includes("Clé API manquante")) {
+        alert("Attention : L'IA n'est pas activée. Rendez-vous dans les Paramètres pour activer votre clé Gemini.");
+      } else {
+        alert(`Erreur lors de l'analyse: ${err.message}`);
+      }
       console.error(err);
     } finally {
       setAnalyzing(false);

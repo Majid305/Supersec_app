@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Camera, Upload, Loader2, Save, RefreshCw, Wand2, FileText, ArrowLeft, Trash2, Check, Calendar, X, Clock, Edit3, Image as ImageIcon, ChevronLeft, ChevronRight, User, MapPin, Hash } from 'lucide-react';
 import { RejectedCheck, CheckRejectionClass, CheckSituation } from '../types';
@@ -71,8 +70,12 @@ export const CheckScanner = ({ onSave, onCancel, initialData }: any) => {
         try {
             const result = await analyzeCheck(fileData, mimeType);
             setFormData(prev => ({ ...prev, ...result }));
-        } catch (e) {
-            alert("Erreur lors de l'analyse IA");
+        } catch (e: any) {
+            if (e.message.includes("Clé API manquante")) {
+                alert("Attention : L'IA n'est pas activée. Rendez-vous dans les Paramètres pour activer votre clé Gemini.");
+            } else {
+                alert(`Erreur lors de l'analyse IA: ${e.message}`);
+            }
             console.error(e);
         } finally {
             setAnalyzing(false);
