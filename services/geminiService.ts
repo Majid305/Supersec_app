@@ -2,9 +2,10 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { DocumentData, DocLanguage, DocStatus, RejectedCheck, CheckRejectionClass, CheckSituation } from "../types";
 
 const getAI = () => {
+  // On utilise process.env.API_KEY qui sera injecté par Vite lors du build sur Vercel
   const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    throw new Error("Clé API manquante. Veuillez activer votre environnement IA dans les Paramètres.");
+  if (!apiKey || apiKey === "undefined" || apiKey.length < 5) {
+    throw new Error("Clé API manquante. L'IA n'est pas activée sur ce déploiement. Vérifiez les Variables d'Environnement Vercel et refaites un déploiement.");
   }
   return new GoogleGenAI({ apiKey });
 };

@@ -5,8 +5,11 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   // base: './' garantit que les chemins vers les JS/CSS dans le HTML final sont relatifs.
-  // Indispensable pour GitHub Pages (sous-répertoires) et compatible avec Vercel.
   base: './', 
+  define: {
+    // Injecte la variable d'environnement API_KEY de Vercel dans le code client
+    'process.env.API_KEY': JSON.stringify(process.env.API_KEY)
+  },
   build: {
     target: 'esnext',
     outDir: 'dist',

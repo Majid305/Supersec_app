@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Lock, Bell, Database, Download, UploadCloud, Loader2, Moon, Sun, ExternalLink, ShieldCheck, Lightbulb, Key, Activity, AlertCircle } from 'lucide-react';
+import { Save, Lock, Bell, Database, Download, UploadCloud, Loader2, Moon, Sun, ExternalLink, ShieldCheck, Lightbulb, Key, Activity, AlertCircle, RefreshCw } from 'lucide-react';
 import { getAllDocuments, restoreBackup } from '../services/db';
 import { DocumentData } from '../types';
 
@@ -13,30 +13,47 @@ interface SettingsProps {
 export const Settings: React.FC<SettingsProps> = ({ enableReminders, setEnableReminders, theme, setTheme }) => {
     const [isRestoring, setIsRestoring] = useState(false);
     const [hasKey, setHasKey] = useState(false);
+    const [isChecking, setIsChecking] = useState(false);
 
     useEffect(() => {
         checkApiKey();
-        const timer = setInterval(checkApiKey, 2000);
+        const timer = setInterval(checkApiKey, 3000);
         return () => clearInterval(timer);
     }, []);
 
     const checkApiKey = async () => {
-        // 1. Priorité à la variable d'environnement système
-        if (process.env.API_KEY && process.env.API_KEY.length > 5) {
+        // 1. Vérification de la variable injectée par Vite/Vercel
+        if (typeof process !== 'undefined' && process.env && process.env.API_KEY && process.env.API_KEY.length > 5) {
             setHasKey(true);
             return;
         }
 
-        // 2. Vérification via le pont sécurisé AI Studio
+        // 2. Vérification via le pont sécurisé AI Studio (window)
         const win = window as any;
         if (win.aistudio && typeof win.aistudio.hasSelectedApiKey === 'function') {
             try {
                 const selected = await win.aistudio.hasSelectedApiKey();
-                if (selected) setHasKey(true);
+                if (selected) {
+                    setHasKey(true);
+                    return;
+                }
             } catch (e) {
-                console.debug("Pont sécurisé en attente...");
+                console.debug("Attente du pont IA...");
             }
         }
+        
+        setHasKey(false);
+    };
+
+    const handleManualRefresh = () => {
+        setIsChecking(true);
+        checkApiKey();
+        setTimeout(() => {
+            setIsChecking(false);
+            if (!hasKey) {
+                alert("La clé n'est toujours pas détectée. Assurez-vous d'avoir bien configuré API_KEY sur Vercel et d'avoir RE-DÉPLOYÉ votre projet.");
+            }
+        }, 1000);
     };
 
     const handleSelectKey = async () => {
@@ -44,12 +61,12 @@ export const Settings: React.FC<SettingsProps> = ({ enableReminders, setEnableRe
         if (win.aistudio && typeof win.aistudio.openSelectKey === 'function') {
             try {
                 await win.aistudio.openSelectKey();
-                setHasKey(true);
+                checkApiKey();
             } catch (e) {
                 console.error("Erreur sélecteur:", e);
             }
         } else {
-            alert("CONFIGURATION REQUISE :\n\n1. Si vous développez : Ajoutez 'API_KEY' dans vos variables d'environnement Vercel.\n2. Si vous testez : Utilisez l'aperçu directement dans Google AI Studio.\n\nNote : La saisie directe est désactivée par mesure de sécurité.");
+            alert("INFO DÉPLOIEMENT VERCEL :\n\n1. Allez sur votre Dashboard Vercel.\n2. Paramètres -> Environment Variables.\n3. Ajoutez 'API_KEY' avec votre clé.\n4. Allez dans 'Deployments' et faites 'Redeploy' pour que les changements soient pris en compte.");
         }
     };
 
@@ -109,7 +126,7 @@ export const Settings: React.FC<SettingsProps> = ({ enableReminders, setEnableRe
             {isRestoring && (
                 <div className="fixed inset-0 bg-black/60 z-[100] flex flex-col items-center justify-center text-white backdrop-blur-sm">
                     <Loader2 size={48} className="animate-spin mb-4 text-citron" />
-                    <p className="font-bold text-xl uppercase">Restauration...</p>
+                    <p className="font-bold text-xl uppercase tracking-widest">Restauration...</p>
                 </div>
             )}
 
@@ -126,14 +143,14 @@ export const Settings: React.FC<SettingsProps> = ({ enableReminders, setEnableRe
                         </div>
                     </div>
                     {hasKey ? (
-                        <div className="flex items-center space-x-2 bg-teal-500/10 border border-teal-500/50 px-4 py-2 rounded-full">
+                        <div className="flex items-center space-x-2 bg-teal-500/10 border border-teal-500/50 px-4 py-2 rounded-full shadow-[0_0_15px_rgba(20,184,166,0.2)]">
                             <Activity size={14} className="text-teal-400 animate-pulse" />
-                            <span className="text-[10px] font-black text-teal-400 uppercase tracking-widest">Actif</span>
+                            <span className="text-[10px] font-black text-teal-400 uppercase tracking-widest">Opérationnel</span>
                         </div>
                     ) : (
                         <div className="flex items-center space-x-2 bg-red-500/10 border border-red-500/50 px-4 py-2 rounded-full">
                             <AlertCircle size={14} className="text-red-500" />
-                            <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">Inactif</span>
+                            <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">Déconnecté</span>
                         </div>
                     )}
                 </div>
@@ -143,52 +160,63 @@ export const Settings: React.FC<SettingsProps> = ({ enableReminders, setEnableRe
                         <div className="flex items-start space-x-3">
                             <Lightbulb size={20} className="text-yellow-400 shrink-0 mt-1" />
                             <p className="text-sm text-slate-400 leading-relaxed">
-                                L'IA nécessite une clé <span className="text-slate-200 font-bold">Gemini 3</span>. Sur Vercel, configurez la variable <code className="bg-slate-800 px-1 rounded text-teal-400 font-bold">API_KEY</code>.
+                                L'intelligence Gemini 3 Pro nécessite une configuration serveur. Si vous avez ajouté votre clé sur Vercel, un <span className="text-teal-400 font-bold underline">Re-déploiement</span> est nécessaire pour l'activation.
                             </p>
                         </div>
                         <a 
-                            href="https://aistudio.google.dev/" 
+                            href="https://aistudio.google.dev/app/apikey" 
                             target="_blank" 
                             rel="noopener noreferrer" 
                             className="inline-flex items-center space-x-2 text-teal-400 font-bold text-xs hover:text-teal-300 transition-colors bg-teal-400/5 px-4 py-2 rounded-xl border border-teal-400/20"
                         >
-                            <span>Accéder à Google AI Studio</span>
+                            <span>Obtenir ma clé Gemini Gratuite</span>
                             <ExternalLink size={14} />
                         </a>
                     </div>
                 </div>
 
                 <div className="space-y-6 relative z-10">
-                    <div className="bg-[#070b14] border-2 border-slate-800 rounded-2xl p-6 text-center">
-                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-3 tracking-widest">Statut de Connexion</label>
+                    <div className="bg-[#070b14] border-2 border-slate-800 rounded-2xl p-6 text-center group transition-colors hover:border-slate-700">
+                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-3 tracking-widest">Vérification Système</label>
                         {hasKey ? (
                             <div className="flex flex-col items-center">
                                 <div className="text-emerald-400 font-black text-sm uppercase flex items-center mb-1">
                                     <ShieldCheck size={18} className="mr-2" /> 
-                                    Clé Sécurisée Détectée
+                                    Clé Détectée & Validée
                                 </div>
-                                <p className="text-[10px] text-slate-600 font-bold">Prêt pour l'analyse de documents</p>
+                                <p className="text-[10px] text-slate-600 font-bold">L'analyse IA est active sur ce terminal</p>
                             </div>
                         ) : (
                             <div className="flex flex-col items-center">
-                                <div className="text-red-400 font-black text-sm uppercase flex items-center mb-1">
-                                    <AlertCircle size={18} className="mr-2" /> 
-                                    Configuration Manquante
+                                <div className="text-amber-500 font-black text-sm uppercase flex items-center mb-1">
+                                    <AlertCircle size={18} className="mr-2 animate-bounce" /> 
+                                    Configuration Incomplète
                                 </div>
-                                <p className="text-[10px] text-slate-600 font-bold">L'IA est actuellement désactivée</p>
+                                <p className="text-[10px] text-slate-600 font-bold">En attente de la variable d'environnement</p>
                             </div>
                         )}
                     </div>
 
-                    <button 
-                        onClick={handleSelectKey}
-                        className={`w-full ${hasKey ? 'bg-slate-800 text-teal-400' : 'bg-teal-600 text-white shadow-xl'} font-black py-5 rounded-2xl flex items-center justify-center space-x-3 transition-all active:scale-[0.98]`}
-                    >
-                        <Key size={20} />
-                        <span className="text-lg uppercase tracking-tight">{hasKey ? "Changer de clé" : "Activer via le pont IA"}</span>
-                    </button>
+                    <div className="flex space-x-3">
+                        <button 
+                            onClick={handleSelectKey}
+                            className={`flex-1 ${hasKey ? 'bg-slate-800 text-teal-400 border border-teal-400/30' : 'bg-teal-600 text-white shadow-xl'} font-black py-5 rounded-2xl flex items-center justify-center space-x-3 transition-all active:scale-[0.98]`}
+                        >
+                            <Key size={20} />
+                            <span className="text-lg uppercase tracking-tight">Activer l'IA</span>
+                        </button>
+                        
+                        <button 
+                            onClick={handleManualRefresh}
+                            className="bg-slate-800 text-slate-400 p-5 rounded-2xl border border-slate-700 hover:text-white transition-colors"
+                            title="Actualiser le statut"
+                        >
+                            <RefreshCw size={24} className={isChecking ? 'animate-spin' : ''} />
+                        </button>
+                    </div>
                 </div>
                 
+                {/* Background deco */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/5 rounded-full blur-[80px] -mr-32 -mt-32"></div>
             </div>
 
@@ -236,12 +264,12 @@ export const Settings: React.FC<SettingsProps> = ({ enableReminders, setEnableRe
                             className="w-full bg-slate-800 text-white font-black py-4 rounded-2xl shadow-md active:scale-95 transition-transform flex justify-center items-center space-x-2"
                         >
                             <Download size={18} />
-                            <span className="uppercase tracking-tight">Exporter Base</span>
+                            <span className="uppercase tracking-tight">Exporter Base Locale</span>
                         </button>
 
                         <label className="w-full bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 font-black py-4 rounded-2xl hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-transform flex justify-center items-center space-x-2 cursor-pointer">
                             <UploadCloud size={18} />
-                            <span className="uppercase tracking-tight">Restaurer Base</span>
+                            <span className="uppercase tracking-tight">Restaurer Base Locale</span>
                             <input type="file" accept=".json" className="hidden" onChange={handleRestore} disabled={isRestoring} />
                         </label>
                     </div>
@@ -249,7 +277,7 @@ export const Settings: React.FC<SettingsProps> = ({ enableReminders, setEnableRe
             </div>
 
             <div className="mt-8 text-center pb-6">
-                <p className="text-[10px] text-gray-400 dark:text-gray-600 font-mono uppercase tracking-widest font-black">Sécapp AI v1.3.2 • Enterprise Secure Mode</p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-600 font-mono uppercase tracking-widest font-black">Sécapp AI v1.3.3 • Deployment Stable Mode</p>
             </div>
         </div>
     );
