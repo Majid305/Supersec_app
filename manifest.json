@@ -1,0 +1,18 @@
+{
+  "name": "Supersec_app",
+  "short_name": "Supersec",
+  "start_url": "index.html",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#E6E6FA",
+  "theme_color": "#0ABAB5",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

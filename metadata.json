@@ -1,0 +1,7 @@
+{
+  "name": "Supersec_app",
+  "description": "Gestion de courrier/chèques intelligente et sécurisée. Analyse IA locale et archivage optimisé.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
