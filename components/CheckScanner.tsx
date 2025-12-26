@@ -118,10 +118,10 @@ export const CheckScanner = ({ onSave, onCancel, initialData }: any) => {
 
     if (!fileData && !isManualEntry) {
         return (
-            <div className="flex flex-col items-center justify-center h-full p-6 space-y-8 bg-gray-50 dark:bg-bordeaux">
+            <div className="flex flex-col items-center justify-center h-full p-6 space-y-8 bg-lavande dark:bg-lavande-deep transition-colors duration-500">
                 <div className="text-center space-y-2">
-                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white uppercase tracking-tighter">Scanner Chèque</h2>
-                    <p className="text-gray-500 dark:text-gray-300 text-sm">Prise de vue ou import</p>
+                    <h2 className="text-2xl font-bold text-gray-800 dark:text-lavande-muted uppercase tracking-tighter">Scanner Chèque</h2>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">Prise de vue ou import sécurisé</p>
                 </div>
                 
                 <input type="file" accept="image/*" capture="environment" className="hidden" ref={cameraInputRef} onChange={handleFileChange} />
@@ -129,7 +129,7 @@ export const CheckScanner = ({ onSave, onCancel, initialData }: any) => {
 
                 <button 
                     onClick={() => cameraInputRef.current?.click()}
-                    className="w-48 h-48 rounded-full bg-citron/10 dark:bg-rose-900/40 border-4 border-citron flex flex-col items-center justify-center shadow-lg active:scale-95 transition-transform"
+                    className="w-48 h-48 rounded-full bg-white/50 dark:bg-slate-800/40 border-4 border-citron flex flex-col items-center justify-center shadow-lg active:scale-95 transition-transform"
                 >
                     <Camera size={48} className="text-citron mb-2" />
                     <span className="text-citron font-black uppercase tracking-widest">Scanner</span>
@@ -138,7 +138,7 @@ export const CheckScanner = ({ onSave, onCancel, initialData }: any) => {
                 <div className="flex flex-col w-full max-w-xs space-y-3">
                     <button 
                         onClick={() => fileInputRef.current?.click()}
-                        className="flex items-center justify-center space-x-3 bg-white dark:bg-rose-950 p-4 rounded-xl shadow text-gray-700 dark:text-gray-200 border border-transparent dark:border-rose-900 active:scale-95 transition-transform"
+                        className="flex items-center justify-center space-x-3 bg-white dark:bg-slate-800 p-4 rounded-xl shadow text-gray-700 dark:text-gray-200 border border-transparent dark:border-slate-700 active:scale-95 transition-transform"
                     >
                         <Upload size={20} className="text-citron" />
                         <span className="font-bold">Importer un fichier</span>
@@ -146,7 +146,7 @@ export const CheckScanner = ({ onSave, onCancel, initialData }: any) => {
                     
                     <button 
                         onClick={() => setIsManualEntry(true)}
-                        className="flex items-center justify-center space-x-3 bg-white dark:bg-rose-950 p-4 rounded-xl shadow text-gray-700 dark:text-gray-200 border border-transparent dark:border-rose-900 active:scale-95 transition-transform"
+                        className="flex items-center justify-center space-x-3 bg-white dark:bg-slate-800 p-4 rounded-xl shadow text-gray-700 dark:text-gray-200 border border-transparent dark:border-slate-700 active:scale-95 transition-transform"
                     >
                         <Edit3 size={20} className="text-citron" />
                         <span className="font-bold">Saisie Manuelle</span>
@@ -160,23 +160,23 @@ export const CheckScanner = ({ onSave, onCancel, initialData }: any) => {
 
     if (analyzing) {
         return (
-            <div className="h-full flex flex-col items-center justify-center bg-gradient-to-b from-bordeaux to-rose-950 text-white space-y-4">
+            <div className="h-full flex flex-col items-center justify-center bg-gradient-to-b from-lavande to-lavande-muted dark:from-lavande-deep dark:to-slate-950 text-gray-800 dark:text-white space-y-4">
                 <Loader2 className="animate-spin text-citron" size={64}/>
                 <div className="text-center">
                     <p className="text-xl font-black uppercase tracking-tighter">Analyse IA...</p>
-                    <p className="text-rose-200 text-sm opacity-70">Expertise chèque en cours</p>
+                    <p className="text-gray-500 dark:text-lavande-muted text-sm opacity-70">Expertise chèque en cours</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="h-full overflow-y-auto pb-32 bg-gray-50 dark:bg-bordeaux">
-            <div className="relative w-full h-[30vh] bg-rose-950 flex items-center justify-center overflow-hidden shrink-0">
+        <div className="h-full overflow-y-auto pb-32 bg-lavande dark:bg-lavande-deep transition-colors duration-500">
+            <div className="relative w-full h-[30vh] bg-slate-200 dark:bg-slate-900 flex items-center justify-center overflow-hidden shrink-0">
                 {fileData ? (
                     <>
                         {mimeType === 'application/pdf' ? (
-                            <div className="flex flex-col items-center text-rose-100">
+                            <div className="flex flex-col items-center text-gray-500 dark:text-lavande-muted">
                                 <FileText size={64} />
                                 <span className="text-sm font-bold mt-2 uppercase tracking-widest">Chèque PDF</span>
                             </div>
@@ -193,7 +193,7 @@ export const CheckScanner = ({ onSave, onCancel, initialData }: any) => {
                     </>
                 ) : (
                     <div className="flex flex-col items-center justify-center space-y-4">
-                        <div className="w-20 h-20 rounded-full bg-rose-900/50 flex items-center justify-center text-rose-300">
+                        <div className="w-20 h-20 rounded-full bg-slate-300 dark:bg-slate-800 flex items-center justify-center text-slate-500">
                            <ImageIcon size={32} />
                         </div>
                         <button 
@@ -271,7 +271,7 @@ export const CheckScanner = ({ onSave, onCancel, initialData }: any) => {
                     <Field label="Encaisseur" value={formData.encaisseur} onChange={(v: string) => setFormData({...formData, encaisseur: v})} />
                 </div>
 
-                <div className="bg-white dark:bg-rose-950/50 p-3 rounded-xl border border-gray-200 dark:border-rose-900 shadow-sm transition-all">
+                <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm transition-all">
                     <label className="block text-[10px] font-black text-citron uppercase mb-1">Rappel pour régularisation</label>
                     <div 
                         onClick={() => setPickerConfig({field: 'date_heure_rappel', type: 'datetime', label: 'Date & Heure Rappel'})}
@@ -289,7 +289,7 @@ export const CheckScanner = ({ onSave, onCancel, initialData }: any) => {
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-rose-950/50 px-3 py-2 rounded-xl border border-gray-200 dark:border-rose-900 shadow-sm">
+                <div className="bg-white dark:bg-slate-800 px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm">
                     <label className="block text-[10px] font-black text-citron uppercase mb-1">Observations</label>
                     <textarea 
                         rows={3}
@@ -329,7 +329,7 @@ export const CheckScanner = ({ onSave, onCancel, initialData }: any) => {
 };
 
 const Field = ({ label, value, onChange, type="text", icon: Icon }: any) => (
-    <div className="bg-white dark:bg-rose-950/50 p-3 rounded-xl border border-gray-200 dark:border-rose-900 shadow-sm focus-within:ring-2 ring-citron/50 transition-all">
+    <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm focus-within:ring-2 ring-citron/50 transition-all">
         <label className="block text-[10px] font-black text-citron uppercase mb-1">{label}</label>
         <div className="flex items-center space-x-2">
             {Icon && <Icon size={14} className="text-citron opacity-40" />}
@@ -344,7 +344,7 @@ const Field = ({ label, value, onChange, type="text", icon: Icon }: any) => (
 );
 
 const Select = ({ label, value, onChange, children }: any) => (
-    <div className="bg-white dark:bg-rose-950/50 p-3 rounded-xl border border-gray-200 dark:border-rose-900 shadow-sm focus-within:ring-2 ring-citron/50 transition-all">
+    <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm focus-within:ring-2 ring-citron/50 transition-all">
         <label className="block text-[10px] font-black text-citron uppercase mb-1">{label}</label>
         <select 
             className="w-full text-sm font-bold bg-transparent outline-none text-gray-800 dark:text-white" 
@@ -357,7 +357,7 @@ const Select = ({ label, value, onChange, children }: any) => (
 );
 
 const ReadOnlyDateInput = ({ label, value, icon: Icon }: any) => (
-    <div className="bg-white dark:bg-rose-950/50 p-3 rounded-xl border border-gray-200 dark:border-rose-900 shadow-sm transition-colors cursor-pointer focus-within:ring-2 ring-citron/50 h-[58px] flex flex-col justify-center">
+    <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm transition-colors cursor-pointer focus-within:ring-2 ring-citron/50 h-[58px] flex flex-col justify-center">
         <label className="block text-[10px] font-black text-citron uppercase mb-0.5 tracking-wider">{label}</label>
         <div className="flex items-center space-x-2">
             <Icon size={14} className="text-citron opacity-50" />
@@ -399,7 +399,7 @@ const CustomDateTimePicker = ({ label, type, initialValue, onClose, onSelect }: 
 
     return (
         <div className="fixed inset-0 z-[100] flex flex-col justify-end bg-black/60 backdrop-blur-sm p-4">
-             <div className="bg-white dark:bg-rose-950 rounded-3xl p-6 w-full max-w-sm mx-auto shadow-2xl border dark:border-rose-900 animate-in slide-in-from-bottom duration-300">
+             <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-sm mx-auto shadow-2xl border dark:border-slate-800 animate-in slide-in-from-bottom duration-300">
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-xl font-bold text-citron uppercase">{label}</h3>
                     <button onClick={onClose} className="p-2 text-gray-500"><X size={20}/></button>
@@ -412,11 +412,11 @@ const CustomDateTimePicker = ({ label, type, initialValue, onClose, onSelect }: 
                 <div className="grid grid-cols-7 gap-1 text-center mb-6">
                     {['L','M','M','J','V','S','D'].map(d => <div key={d} className="text-xs font-bold text-gray-400">{d}</div>)}
                     {days.map((d, i) => d ? (
-                        <button key={i} onClick={() => handleDateClick(d)} className={`h-10 rounded-full flex items-center justify-center text-sm font-medium ${selectedDate.getDate() === d && selectedDate.getMonth() === viewDate.getMonth() ? 'bg-citron text-white' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-rose-900'}`}>{d}</button>
+                        <button key={i} onClick={() => handleDateClick(d)} className={`h-10 rounded-full flex items-center justify-center text-sm font-medium ${selectedDate.getDate() === d && selectedDate.getMonth() === viewDate.getMonth() ? 'bg-citron text-white' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800'}`}>{d}</button>
                     ) : <div key={i} />)}
                 </div>
                 {type === 'datetime' && (
-                    <div className="flex items-center justify-center space-x-4 mb-6 bg-gray-50 dark:bg-rose-900/50 p-3 rounded-2xl">
+                    <div className="flex items-center justify-center space-x-4 mb-6 bg-gray-50 dark:bg-slate-800 p-3 rounded-2xl">
                         <div className="flex flex-col items-center">
                             <input type="number" min="0" max="23" value={time.hours} onChange={(e) => setTime({...time, hours: parseInt(e.target.value) || 0})} className="w-12 text-center font-bold bg-transparent outline-none dark:text-white" />
                             <span className="text-[10px] text-gray-400 uppercase font-black">Heures</span>
