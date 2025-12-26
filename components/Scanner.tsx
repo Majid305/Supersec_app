@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Camera, Upload, Loader2, Save, RefreshCw, Wand2, FileText, ArrowLeft, Trash2, Calendar, Clock, ChevronLeft, ChevronRight, X, Check, Edit3, Image as ImageIcon } from 'lucide-react';
 import { DocumentData, DocLanguage, DocStatus, DocType } from '../types';
@@ -52,11 +53,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onSave, onCancel, initialData 
       const result = await analyzeDocument(fileData, mimeType);
       setFormData(prev => ({ ...prev, ...result }));
     } catch (err: any) {
-      if (err.message.includes("Clé API manquante")) {
-        alert("Attention : L'IA n'est pas activée. Rendez-vous dans les Paramètres pour activer votre clé Gemini.");
-      } else {
-        alert(`Erreur lors de l'analyse: ${err.message}`);
-      }
+      alert(`Erreur IA : ${err.message || "Impossible d'accéder au service."}`);
       console.error(err);
     } finally {
       setAnalyzing(false);
@@ -114,6 +111,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onSave, onCancel, initialData 
         </div>
         
         <input type="file" accept="image/*" capture="environment" className="hidden" ref={cameraInputRef} onChange={handleFileChange} />
+        {/* Fixed: Use handleFileChange instead of undefined handleChange */}
         <input type="file" accept="image/*,application/pdf" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
 
         <button 
@@ -207,7 +205,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onSave, onCancel, initialData 
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <Input label="Émetteur" value={formData.emetteur} onChange={(v: string) => setFormData({...formData, emetteur: v})} />
+                        <Input label="Émetteur" value={formData.emetteur} onChange={(v: string) => setFormData({...formData, destinataire: v})} />
                         <Input label="Destinataire" value={formData.destinataire} onChange={(v: string) => setFormData({...formData, destinataire: v})} />
                     </div>
 

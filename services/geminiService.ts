@@ -1,9 +1,8 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { DocumentData, RejectedCheck } from "../types";
 
-// Using gemini-3-pro-preview for complex extraction and synthesis tasks.
-const MODEL_NAME = 'gemini-3-pro-preview';
+// Utilisation du modèle Gemini 3 Flash comme demandé par l'utilisateur
+const MODEL_NAME = 'gemini-3-flash-preview';
 
 const documentSchema = {
   type: Type.OBJECT,
@@ -44,7 +43,6 @@ const checkSchema = {
   required: ["banque", "numero_cheque", "montant"]
 };
 
-// Always use process.env.API_KEY directly as per guidelines.
 export const analyzeDocument = async (base64Image: string, mimeType: string): Promise<Partial<DocumentData>> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const prompt = "Analyse ce document administratif et extrais les informations structurées en JSON. Si le texte est en Arabe, traduis l'objet et le résumé en Français mais garde les noms propres si nécessaire.";
@@ -64,8 +62,7 @@ export const analyzeDocument = async (base64Image: string, mimeType: string): Pr
   });
 
   try {
-    const text = response.text || "{}";
-    return JSON.parse(text);
+    return JSON.parse(response.text || "{}");
   } catch (e) {
     console.error("Failed to parse Gemini response", e);
     return {};
@@ -91,8 +88,7 @@ export const analyzeCheck = async (base64Image: string, mimeType: string): Promi
   });
 
   try {
-    const text = response.text || "{}";
-    return JSON.parse(text);
+    return JSON.parse(response.text || "{}");
   } catch (e) {
     console.error("Failed to parse Gemini response", e);
     return {};
