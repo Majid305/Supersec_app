@@ -1,14 +1,9 @@
-import { GoogleGenAI, Type } from "@google/genai";
-import { DocumentData, DocLanguage, DocStatus, RejectedCheck, CheckRejectionClass, CheckSituation } from "../types";
 
-const getAI = () => {
-  // On utilise process.env.API_KEY qui sera injecté par Vite lors du build sur Vercel
-  const apiKey = process.env.API_KEY;
-  if (!apiKey || apiKey === "undefined" || apiKey.length < 5) {
-    throw new Error("Clé API manquante. L'IA n'est pas activée sur ce déploiement. Vérifiez les Variables d'Environnement Vercel et refaites un déploiement.");
-  }
-  return new GoogleGenAI({ apiKey });
-};
+import { GoogleGenAI, Type } from "@google/genai";
+import { DocumentData, RejectedCheck } from "../types";
+
+// Using gemini-3-pro-preview for complex extraction and synthesis tasks.
+const MODEL_NAME = 'gemini-3-pro-preview';
 
 const documentSchema = {
   type: Type.OBJECT,
@@ -49,22 +44,19 @@ const checkSchema = {
   required: ["banque", "numero_cheque", "montant"]
 };
 
+// Always use process.env.API_KEY directly as per guidelines.
 export const analyzeDocument = async (base64Image: string, mimeType: string): Promise<Partial<DocumentData>> => {
-  const ai = getAI();
-  const model = "gemini-3-flash-preview";
-
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const prompt = "Analyse ce document administratif et extrais les informations structurées en JSON. Si le texte est en Arabe, traduis l'objet et le résumé en Français mais garde les noms propres si nécessaire.";
 
-  const result = await ai.models.generateContent({
-    model,
-    contents: [
-      {
-        parts: [
-          { text: prompt },
-          { inlineData: { data: base64Image.split(',')[1], mimeType } }
-        ]
-      }
-    ],
+  const response = await ai.models.generateContent({
+    model: MODEL_NAME,
+    contents: {
+      parts: [
+        { text: prompt },
+        { inlineData: { data: base64Image.split(',')[1], mimeType } }
+      ]
+    },
     config: {
       responseMimeType: "application/json",
       responseSchema: documentSchema
@@ -72,7 +64,8 @@ export const analyzeDocument = async (base64Image: string, mimeType: string): Pr
   });
 
   try {
-    return JSON.parse(result.text || "{}");
+    const text = response.text || "{}";
+    return JSON.parse(text);
   } catch (e) {
     console.error("Failed to parse Gemini response", e);
     return {};
@@ -80,21 +73,17 @@ export const analyzeDocument = async (base64Image: string, mimeType: string): Pr
 };
 
 export const analyzeCheck = async (base64Image: string, mimeType: string): Promise<Partial<RejectedCheck>> => {
-  const ai = getAI();
-  const model = "gemini-3-flash-preview";
-
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const prompt = "Analyse ce chèque bancaire (éventuellement avec son avis de rejet). Extraits le RIB (24 chiffres), le montant, le numéro de chèque, la banque, la ville, et identifie le propriétaire (tireur) ainsi que le bénéficiaire.";
 
-  const result = await ai.models.generateContent({
-    model,
-    contents: [
-      {
-        parts: [
-          { text: prompt },
-          { inlineData: { data: base64Image.split(',')[1], mimeType } }
-        ]
-      }
-    ],
+  const response = await ai.models.generateContent({
+    model: MODEL_NAME,
+    contents: {
+      parts: [
+        { text: prompt },
+        { inlineData: { data: base64Image.split(',')[1], mimeType } }
+      ]
+    },
     config: {
       responseMimeType: "application/json",
       responseSchema: checkSchema
@@ -102,7 +91,8 @@ export const analyzeCheck = async (base64Image: string, mimeType: string): Promi
   });
 
   try {
-    return JSON.parse(result.text || "{}");
+    const text = response.text || "{}";
+    return JSON.parse(text);
   } catch (e) {
     console.error("Failed to parse Gemini response", e);
     return {};
@@ -110,9 +100,7 @@ export const analyzeCheck = async (base64Image: string, mimeType: string): Promi
 };
 
 export const generateResponse = async (doc: DocumentData, instruction: string): Promise<string> => {
-  const ai = getAI();
-  const model = "gemini-3-flash-preview";
-
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const prompt = `En tant qu'assistant administratif, rédige une réponse ou une note suite à ce document :
   Objet : ${doc.objet}
   Résumé : ${doc.resume}
@@ -121,36 +109,30 @@ export const generateResponse = async (doc: DocumentData, instruction: string): 
   
   Rédige un texte professionnel, clair et concis.`;
 
-  const result = await ai.models.generateContent({
-    model,
+  const response = await ai.models.generateContent({
+    model: MODEL_NAME,
     contents: prompt
   });
 
-  return result.text || "";
+  return response.text || "";
 };
 
 export const generateReportSynthesis = async (docs: DocumentData[], period: string, typeFilter: string): Promise<string> => {
-  const ai = getAI();
-  const model = "gemini-3-pro-preview";
-
-  const summaryData = docs.slice(0, 15).map(d => `- Objet: ${d.objet} | Résumé: ${d.resume.substring(0, 100)}...`).join('\n');
-
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const prompt = `Analyse les flux administratifs suivants pour la période de ${period} (Filtre: ${typeFilter}).
   Documents (échantillon des ${docs.length} traités) :
-  ${summaryData}
+  ${docs.slice(0, 20).map(d => `- Objet: ${d.objet} | Résumé: ${d.resume.substring(0, 100)}...`).join('\n')}
   
   Produis un rapport de synthèse d'expertise structuré en 4 points :
-  1. Tendances globales des flux (volume et récurrence).
-  2. Analyse critique des objets traités (points d'attention).
-  3. Recommandations stratégiques pour l'optimisation.
-  4. Conclusion sur l'efficacité opérationnelle.
-  
-  Le ton doit être formel et analytique.`;
+  1. Tendances globales des flux.
+  2. Analyse critique des objets traités.
+  3. Recommandations d'optimisation.
+  4. Conclusion.`;
 
-  const result = await ai.models.generateContent({
-    model,
+  const response = await ai.models.generateContent({
+    model: MODEL_NAME,
     contents: prompt
   });
 
-  return result.text || "";
+  return response.text || "";
 };
