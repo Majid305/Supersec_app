@@ -243,7 +243,7 @@ export const CheckScanner = ({ onSave, onCancel, initialData }: any) => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                    <Field label="Montant (DH)" type="number" value={formData.montant} onChange={(v: string) => setFormData({...formData, montant: v})} />
+                    <Field label="Montant (DH)" type="number" value={formData.montant} onChange={(v: string) => setFormData({...formData, montant: Number(v) || 0})} />
                     <div onClick={() => setPickerConfig({field: 'date_rejet', type: 'date', label: 'Date de Rejet'})}>
                         <ReadOnlyDateInput label="Date de Rejet" value={formData.date_rejet} icon={Calendar} />
                     </div>
