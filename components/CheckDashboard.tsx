@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Filter, Download, MoreVertical, Edit, Trash2, Printer, Copy, FileText, X, Clock, AlertCircle, Loader2 } from 'lucide-react';
+import { Search, Download, MoreVertical, Edit, Trash2, Printer, Copy, FileText, X, Clock, AlertCircle, Loader2, AlertTriangle } from 'lucide-react';
 import { RejectedCheck, CheckRejectionClass, CheckSituation } from '../types';
 import { getAllChecks, deleteCheck, saveCheck } from '../services/db';
 import * as XLSX from 'xlsx';
@@ -11,6 +11,7 @@ export const CheckDashboard = ({ onEdit }: { onEdit: (check: RejectedCheck) => v
     const [search, setSearch] = useState("");
     const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
     const [generatingPdf, setGeneratingPdf] = useState(false);
+    const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
     useEffect(() => {
         load();
@@ -35,9 +36,13 @@ export const CheckDashboard = ({ onEdit }: { onEdit: (check: RejectedCheck) => v
     }, [search, checks]);
 
     const load = async () => {
-        const data = await getAllChecks();
-        setChecks(data);
-        setFiltered(data);
+        try {
+            const data = await getAllChecks();
+            setChecks(data);
+            setFiltered(data);
+        } catch (err) {
+            console.error("Failed to load checks", err);
+        }
     };
 
     const handleExportXLSX = () => {
@@ -59,12 +64,17 @@ export const CheckDashboard = ({ onEdit }: { onEdit: (check: RejectedCheck) => v
         load();
     };
 
-    const handleDelete = async (id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (!confirm("Supprimer ce chèque ?")) return;
-        setMenuOpenId(null);
-        await deleteCheck(id);
-        load();
+    const confirmDelete = async () => {
+        if (!deleteTargetId) return;
+        try {
+            await deleteCheck(deleteTargetId);
+            setChecks(prev => prev.filter(c => c.id !== deleteTargetId));
+            setDeleteTargetId(null);
+        } catch (err) {
+            console.error("Delete check failed", err);
+            alert("Erreur lors de la suppression du chèque.");
+            setDeleteTargetId(null);
+        }
     };
 
     const handleDownloadPDF = async (check: RejectedCheck, e: React.MouseEvent) => {
@@ -75,113 +85,42 @@ export const CheckDashboard = ({ onEdit }: { onEdit: (check: RejectedCheck) => v
         try {
             const doc = new jsPDF('p', 'mm', 'a4');
             const pageWidth = doc.internal.pageSize.getWidth();
-            const pageHeight = doc.internal.pageSize.getHeight();
             
-            doc.setFillColor(132, 204, 22);
+            // Header expert
+            doc.setFillColor(132, 204, 22); // Citron green
             doc.rect(0, 0, pageWidth, 30, 'F');
             doc.setTextColor(255);
-            doc.setFontSize(24);
+            doc.setFontSize(22);
             doc.setFont('helvetica', 'bold');
-            doc.text("FICHE DE CHÈQUE REJETÉ", pageWidth / 2, 20, { align: 'center' });
+            doc.text("FICHE EXPERT : CHÈQUE REJETÉ", pageWidth / 2, 20, { align: 'center' });
 
             doc.setTextColor(50);
-            const startY = 45;
-            const leftX = 20;
-            const midX = 110;
-            const rowH = 10;
+            let y = 45;
+            const left = 20;
 
-            const drawField = (label: string, value: string, x: number, y: number, fullWidth = false) => {
-                doc.setFontSize(9);
+            const addField = (label: string, value: any) => {
+                doc.setFontSize(10);
                 doc.setFont('helvetica', 'bold');
                 doc.setTextColor(132, 204, 22);
-                doc.text(label.toUpperCase(), x, y - 4);
-                
-                doc.setFontSize(11);
+                doc.text(label.toUpperCase(), left, y);
+                doc.setFontSize(12);
                 doc.setFont('helvetica', 'normal');
                 doc.setTextColor(50);
-                doc.text(String(value || "-"), x, y);
-                
-                doc.setDrawColor(230);
-                const lineLen = fullWidth ? (pageWidth - leftX * 2) : 80;
-                doc.line(x, y + 2, x + lineLen, y + 2);
+                doc.text(String(value || "N/A"), left, y + 6);
+                y += 15;
             };
 
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(100);
-            doc.text("INFORMATIONS BANCAIRES", leftX, startY - 8);
+            addField("Banque", check.banque);
+            addField("N° Chèque", check.numero_cheque);
+            addField("Montant", `${Number(check.montant).toLocaleString()} DH`);
+            addField("Tireur (Propriétaire)", check.nom_proprietaire);
+            addField("Bénéficiaire", check.nom_beneficiaire);
+            addField("RIB", check.rib);
+            addField("Motif de rejet", check.motif_rejet);
+            addField("Situation", check.situation_actuelle);
+            addField("Date Rejet", check.date_rejet);
 
-            drawField("Mois de Rejet", check.mois_rejet, leftX, startY);
-            drawField("Date Système", check.date_systeme, midX, startY);
-            
-            drawField("Banque", check.banque, leftX, startY + rowH * 1.5);
-            drawField("Ville", check.ville, midX, startY + rowH * 1.5);
-
-            drawField("N° Chèque", check.numero_cheque, leftX, startY + rowH * 3);
-            drawField("N° Compte", check.numero_compte, midX, startY + rowH * 3);
-
-            drawField("Montant", `${check.montant.toLocaleString()} DH`, leftX, startY + rowH * 4.5);
-            drawField("Date Rejet", check.date_rejet, midX, startY + rowH * 4.5);
-
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(100);
-            doc.text("PARTIES PRENANTES", leftX, startY + rowH * 6.5);
-
-            drawField("Propriétaire (Tireur)", check.nom_proprietaire, leftX, startY + rowH * 7.5);
-            drawField("Bénéficiaire", check.nom_beneficiaire, midX, startY + rowH * 7.5);
-
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(100);
-            doc.text("SITUATION DU REJET", leftX, startY + rowH * 9.5);
-
-            drawField("Classe", check.classe_rejet, leftX, startY + rowH * 10.5);
-            drawField("Situation Actuelle", check.situation_actuelle, midX, startY + rowH * 10.5);
-            
-            drawField("Agence", check.agence, leftX, startY + rowH * 12);
-            drawField("Motif", check.motif_rejet, midX, startY + rowH * 12);
-            
-            drawField("Rappel Prévu", check.date_heure_rappel || "Aucun", leftX, startY + rowH * 13.5, true);
-
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(100);
-            doc.text("COORDONNÉES DE PAIEMENT (RIB)", leftX, startY + rowH * 15.5);
-            drawField("RIB Complet", check.rib, leftX, startY + rowH * 16.5, true);
-
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(100);
-            doc.text("OBSERVATIONS", leftX, startY + rowH * 18.5);
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(80);
-            const obsLines = doc.splitTextToSize(check.observation || "Aucune observation particulière.", pageWidth - 40);
-            doc.text(obsLines, leftX, startY + rowH * 19.2);
-
-            if (check.document_image && check.mimeType.startsWith('image/')) {
-                doc.addPage();
-                doc.setFillColor(245, 245, 245);
-                doc.rect(0, 0, pageWidth, 20, 'F');
-                doc.setFontSize(12);
-                doc.setTextColor(100);
-                doc.text("COPIE NUMÉRISÉE DU CHÈQUE", pageWidth / 2, 13, { align: 'center' });
-                
-                const imgProps = doc.getImageProperties(check.document_image);
-                const margin = 15;
-                const availableW = pageWidth - margin * 2;
-                const availableH = pageHeight - 40;
-                let w = availableW;
-                let h = (imgProps.height * w) / imgProps.width;
-                if (h > availableH) {
-                    h = availableH;
-                    w = (imgProps.width * h) / imgProps.height;
-                }
-                doc.addImage(check.document_image, 'JPEG', (pageWidth - w) / 2, 25, w, h);
-            }
-
-            doc.save(`Supersec_Cheque_${check.numero_cheque}.pdf`);
+            doc.save(`Expert_Cheque_${check.numero_cheque}.pdf`);
         } catch (err) {
             console.error(err);
             alert("Erreur lors de la génération du PDF.");
@@ -204,9 +143,7 @@ export const CheckDashboard = ({ onEdit }: { onEdit: (check: RejectedCheck) => v
         if (check.situation_actuelle === CheckSituation.REGULARISE) return 'border-l-4 border-green-500';
         if (check.date_heure_rappel) {
             const deadline = new Date(check.date_heure_rappel).getTime();
-            const now = Date.now();
-            if (deadline < now) return 'border-l-4 border-red-600 animate-pulse';
-            if ((deadline - now) < 86400000) return 'border-l-4 border-orange-500';
+            if (deadline < Date.now()) return 'border-l-4 border-red-600 animate-pulse';
         }
         return check.classe_rejet === CheckRejectionClass.FOND ? 'border-l-4 border-red-400' : 'border-l-4 border-citron';
     };
@@ -220,7 +157,7 @@ export const CheckDashboard = ({ onEdit }: { onEdit: (check: RejectedCheck) => v
                 </div>
             )}
 
-            <div className="bg-white dark:bg-slate-900 p-4 shadow-sm z-10 transition-colors duration-300">
+            <div className="bg-white dark:bg-slate-900 p-4 shadow-sm z-10">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Chèques Rejetés</h2>
                     <button onClick={handleExportXLSX} className="text-citron p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors">
@@ -231,7 +168,7 @@ export const CheckDashboard = ({ onEdit }: { onEdit: (check: RejectedCheck) => v
                     <Search className="absolute left-3 top-3 text-gray-400" size={18} />
                     <input 
                         className="w-full bg-gray-100 dark:bg-slate-800 rounded-xl pl-10 pr-4 py-2 text-sm outline-none text-gray-800 dark:text-white focus:ring-2 ring-citron/50 transition-all"
-                        placeholder="Rechercher banque, N°, RIB, nom..."
+                        placeholder="Rechercher banque, N°, nom..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
@@ -250,54 +187,27 @@ export const CheckDashboard = ({ onEdit }: { onEdit: (check: RejectedCheck) => v
                     <div 
                         key={check.id} 
                         onClick={() => onEdit(check)}
-                        className={`bg-white dark:bg-slate-800/40 rounded-2xl p-4 shadow-sm cursor-pointer active:scale-[0.98] transition-all relative group ${getStatusIndicator(check)}`}
+                        className={`bg-white dark:bg-slate-800/40 rounded-2xl p-4 shadow-sm cursor-pointer active:scale-[0.98] transition-all relative ${getStatusIndicator(check)}`}
                     >
                         <div className="flex justify-between items-start">
-                            <div className="flex-1 pr-2">
-                                <div className="flex items-center space-x-2">
-                                    <h3 className="font-bold text-gray-800 dark:text-gray-100 truncate">{check.banque || "Banque inconnue"}</h3>
-                                    {check.date_heure_rappel && check.situation_actuelle !== CheckSituation.REGULARISE && (
-                                        <Clock size={14} className={new Date(check.date_heure_rappel).getTime() < Date.now() ? "text-red-500" : "text-citron"} />
-                                    )}
-                                </div>
-                                <p className="text-[10px] font-black text-citron uppercase mt-0.5 tracking-wider">{check.ville || "Ville non précisée"}</p>
-                                <div className="mt-2 space-y-0.5">
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
-                                        <span className="font-bold opacity-70">De:</span> {check.nom_proprietaire || "Non identifié"}
-                                    </p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
-                                        <span className="font-bold opacity-70">Pour:</span> {check.nom_beneficiaire || "Non identifié"}
-                                    </p>
-                                </div>
+                            <div className="flex-1 truncate pr-2">
+                                <h3 className="font-bold text-gray-800 dark:text-gray-100 truncate">{check.banque || "Banque Inconnue"}</h3>
+                                <p className="text-lg font-black text-citron leading-none mt-1">{(Number(check.montant) || 0).toLocaleString()} DH</p>
+                                <p className="text-[10px] font-black text-gray-400 uppercase mt-1 line-clamp-1">{check.nom_proprietaire}</p>
                             </div>
-                            <div className="flex flex-col items-end shrink-0">
-                                <span className="text-lg font-black text-citron leading-none">{(Number(check.montant) || 0).toLocaleString()} DH</span>
-                                <div className="flex space-x-1 mt-2">
-                                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-black uppercase ${check.classe_rejet === CheckRejectionClass.FOND ? 'bg-red-500 text-white' : 'bg-citron text-white'}`}>
-                                        {check.classe_rejet}
-                                    </span>
-                                    <button 
-                                        onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === check.id ? null : check.id); }}
-                                        className="p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors"
-                                    >
-                                        <MoreVertical size={16} />
-                                    </button>
-                                </div>
-                            </div>
+                            <button 
+                                onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === check.id ? null : check.id); }}
+                                className="p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+                            >
+                                <MoreVertical size={18} />
+                            </button>
                         </div>
 
-                        <div className="mt-3 pt-3 border-t border-gray-50 dark:border-slate-700 flex justify-between items-end">
-                            <div className="flex flex-col space-y-1.5">
-                                {getSituationBadge(check.situation_actuelle)}
-                                {check.date_heure_rappel && check.situation_actuelle !== CheckSituation.REGULARISE && (
-                                    <span className={`text-[9px] font-black uppercase flex items-center ${new Date(check.date_heure_rappel).getTime() < Date.now() ? "text-red-500 animate-pulse" : "text-gray-400"}`}>
-                                        <AlertCircle size={10} className="mr-1" /> Échéance: {check.date_heure_rappel.replace('T', ' ')}
-                                    </span>
-                                )}
-                            </div>
+                        <div className="mt-3 flex justify-between items-center border-t border-gray-50 dark:border-slate-700/50 pt-3">
+                            {getSituationBadge(check.situation_actuelle)}
                             <div className="text-right">
-                                <p className="text-[10px] text-gray-400 dark:text-gray-300 font-mono font-bold">N° {check.numero_cheque}</p>
-                                <p className="text-[10px] text-gray-400 dark:text-gray-300 uppercase font-bold">{check.date_rejet}</p>
+                                <span className="text-[10px] text-gray-400 font-bold block leading-none">N° {check.numero_cheque}</span>
+                                <span className="text-[9px] text-gray-300 font-bold uppercase">{check.date_rejet}</span>
                             </div>
                         </div>
 
@@ -313,7 +223,7 @@ export const CheckDashboard = ({ onEdit }: { onEdit: (check: RejectedCheck) => v
                                     <Printer size={16} className="mr-3 text-gray-500" /> Fiche Expert PDF
                                 </button>
                                 <div className="h-px bg-gray-100 dark:bg-slate-800 my-1 mx-2"></div>
-                                <button onClick={(e) => { handleDelete(check.id, e); setMenuOpenId(null); }} className="flex items-center px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/20 text-sm font-bold text-red-600 dark:text-red-400 transition-colors">
+                                <button onClick={(e) => { e.stopPropagation(); setDeleteTargetId(check.id); setMenuOpenId(null); }} className="flex items-center px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/20 text-sm font-bold text-red-600 dark:text-red-400 transition-colors">
                                     <Trash2 size={16} className="mr-3" /> Supprimer
                                 </button>
                                 <button onClick={(e) => { e.stopPropagation(); setMenuOpenId(null); }} className="absolute -top-2 -right-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-1.5 rounded-full shadow-lg">
@@ -324,6 +234,22 @@ export const CheckDashboard = ({ onEdit }: { onEdit: (check: RejectedCheck) => v
                     </div>
                 ))}
             </div>
+
+            {deleteTargetId && (
+                <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6">
+                    <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 w-full max-w-xs text-center shadow-2xl animate-in zoom-in duration-200">
+                        <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <AlertTriangle size={32} />
+                        </div>
+                        <h3 className="text-xl font-black text-gray-800 dark:text-white uppercase mb-2 tracking-tighter">Supprimer ?</h3>
+                        <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">Ce chèque sera définitivement retiré de la base de données locale.</p>
+                        <div className="flex flex-col space-y-3">
+                            <button onClick={confirmDelete} className="w-full bg-red-600 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-transform uppercase tracking-widest">Confirmer</button>
+                            <button onClick={() => setDeleteTargetId(null)} className="w-full text-gray-400 font-bold py-2 hover:text-gray-600 transition-colors">ANNULER</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
