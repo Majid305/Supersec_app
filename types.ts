@@ -1,7 +1,7 @@
 
 export enum DocStatus {
   EN_COURS = "En cours",
-  TRAITE = "Traité"
+  CLOTURE = "Clôturé"
 }
 
 export enum DocLanguage {

@@ -27,7 +27,8 @@ export const Statistics = () => {
     const calculateStats = async () => {
         try {
             const docs = await getAllDocuments();
-            const traites = docs.filter(d => d.statut === DocStatus.TRAITE).length;
+            // Fix: Changed DocStatus.TRAITE to DocStatus.CLOTURE (line 30)
+            const traites = docs.filter(d => d.statut === DocStatus.CLOTURE).length;
             const statusData = [
                 { name: 'Traités', value: traites, color: '#00C979' },
                 { name: 'En cours', value: docs.length - traites, color: '#FF6600' }
@@ -40,12 +41,13 @@ export const Statistics = () => {
     };
 
     const handleGenerateReport = async () => {
-        let filtered = stats.allDocs.filter(d => d.statut === DocStatus.TRAITE);
+        // Fix: Changed DocStatus.TRAITE to DocStatus.CLOTURE (line 43)
+        let filtered = stats.allDocs.filter(d => d.statut === DocStatus.CLOTURE);
         if (reportConfig.startDate) filtered = filtered.filter(d => d.date_document >= reportConfig.startDate);
         if (reportConfig.endDate) filtered = filtered.filter(d => d.date_document <= reportConfig.endDate);
         if (reportConfig.type !== 'ALL') filtered = filtered.filter(d => d.type_objet === reportConfig.type);
 
-        if (filtered.length === 0) { alert("Aucune donnée disponible (seuls les documents 'Traités' sont analysés)."); return; }
+        if (filtered.length === 0) { alert("Aucune donnée disponible (seuls les documents 'Clôturés' sont analysés)."); return; }
 
         setIsGenerating(true);
         setShowReportModal(false);
